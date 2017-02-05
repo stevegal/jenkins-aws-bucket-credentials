@@ -1,0 +1,1 @@
+This is a jenkins plugin to retrieve encrypted credentials from an Amazon S3 bucket that is encrypted with KMS
