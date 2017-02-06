@@ -1,8 +1,11 @@
 package uk.co.stevegal.jenkins.plugins.awsbucketcredentials;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.policy.resources.S3BucketResource;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.kms.model.DecryptRequest;
 import com.amazonaws.services.kms.model.DecryptResult;
@@ -12,6 +15,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -32,7 +36,7 @@ import java.util.logging.Logger;
 /**
  * Created by stevegal on 05/02/2017.
  */
-public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements AwsBucketCredentials {
+public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements AwsBucketCredentials, StandardUsernamePasswordCredentials {
 
     private final String bucketName;
     private final String bucketPath;
@@ -47,7 +51,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private static final Logger LOGGER = Logger.getLogger(AwsBucketCredentialsImpl.class.getName());
 
     @DataBoundConstructor
-    public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id,
+    public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id, @CheckForNull String region,
                                     @CheckForNull String bucketName, @CheckForNull String bucketPath,
                                     @CheckForNull String username, @CheckForNull String description,
                                     @CheckForNull String kmsEncryptionContextKey, @CheckForNull String kmsSecretName) {
@@ -58,7 +62,10 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         this.kmsSecretName = kmsSecretName;
         this.username = username;
         this.amazonS3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+        final Region definedRegion = Region.getRegion(Regions.valueOf(region));
+        this.amazonS3Client.setRegion(definedRegion);
         this.amazonKmsClient = new AWSKMSClient();
+        this.amazonKmsClient.setRegion(definedRegion);
     }
 
     @Override

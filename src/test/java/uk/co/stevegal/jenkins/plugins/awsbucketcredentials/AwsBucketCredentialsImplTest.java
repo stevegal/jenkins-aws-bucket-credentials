@@ -1,5 +1,7 @@
 package uk.co.stevegal.jenkins.plugins.awsbucketcredentials;
 
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.kms.model.DecryptRequest;
 import com.amazonaws.services.kms.model.DecryptResult;
@@ -21,6 +23,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -41,7 +44,7 @@ import static org.mockito.Mockito.when;
 public class AwsBucketCredentialsImplTest {
 
     private AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-            "bucketUri", "/bucketPath", "username",
+            "EU_WEST_1","bucketUri", "/bucketPath", "username",
             "mydescription","someEncryptContextKey", "kmsEncryptContextValue");
 
     private AmazonS3Client mockClient;
@@ -114,10 +117,22 @@ public class AwsBucketCredentialsImplTest {
     }
 
     @Test
+    public void regionSetInKmsAndS3Clients() throws Exception {
+        AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
+            "EU_WEST_1","bucketUri", "/bucketPath", "username",
+            "mydescription",null, null);
+        AmazonS3Client client = (AmazonS3Client)Whitebox.getInternalState(test, "amazonS3Client");
+        assertThat(client.getRegion().toString()).isEqualTo(Region.getRegion(Regions.EU_WEST_1).toString());
+        AWSKMSClient awskmsClient = (AWSKMSClient)Whitebox.getInternalState(test,"amazonKmsClient");
+        URI endpoint = (URI)Whitebox.getInternalState(awskmsClient,"endpoint");
+        assertThat(endpoint.toString()).contains("eu-west");
+    }
+
+    @Test
     public void doesNotUseEncryptContextIfNotProvided() throws Exception {
 
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-                "bucketUri", "/bucketPath", "username",
+                "EU_WEST_1","bucketUri", "/bucketPath", "username",
                 "mydescription",null, null);
         Whitebox.setInternalState(test, "amazonS3Client", mockClient);
         Whitebox.setInternalState(test,"amazonKmsClient", mockKmsClient);
@@ -160,7 +175,7 @@ public class AwsBucketCredentialsImplTest {
     @Test
     public void closesIfIOExceptionWhileReading() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-                "bucketUri", "/bucketPath", "username",
+                "EU_WEST_1","bucketUri", "/bucketPath", "username",
                 "mydescription",null, null);
         Whitebox.setInternalState(test, "amazonS3Client", mockClient);
         Whitebox.setInternalState(test,"amazonKmsClient", mockKmsClient);
