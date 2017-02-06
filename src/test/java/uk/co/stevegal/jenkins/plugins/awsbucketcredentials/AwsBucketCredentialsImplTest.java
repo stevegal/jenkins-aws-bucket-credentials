@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import hudson.util.Secret;
+import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,6 +20,7 @@ import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -151,6 +153,48 @@ public class AwsBucketCredentialsImplTest {
         ByteBuffer ciphertextBlob = capturedDecryptRequest.getValue().getCiphertextBlob();
         assertThat(new String(Charset.forName("UTF-8").decode(ciphertextBlob).array())).isEqualTo("encryptedPassword");
 
+        verify(mockS3Object).close();
+
+    }
+
+    @Test
+    public void closesIfIOExceptionWhileReading() throws Exception {
+        AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
+                "bucketUri", "/bucketPath", "username",
+                "mydescription",null, null);
+        Whitebox.setInternalState(test, "amazonS3Client", mockClient);
+        Whitebox.setInternalState(test,"amazonKmsClient", mockKmsClient);
+
+        S3Object mockS3Object = mock(S3Object.class);
+        when(mockClient.getObject(any(GetObjectRequest.class))).thenReturn(mockS3Object);
+        S3ObjectInputStream mockS3ObjectInputStream = mock(S3ObjectInputStream.class);
+        when(mockS3Object.getObjectContent()).thenReturn(mockS3ObjectInputStream);
+        when(mockS3ObjectInputStream.read(new byte[anyInt()], anyInt(), anyByte()))
+                .thenAnswer(new WriteBufferAnswer("encryptedPassword".getBytes()))
+                .thenThrow(new IOException("something went wrong"))
+                .thenReturn(-1);
+
+        DecryptResult result = new DecryptResult();
+        CharsetEncoder charsetEncoder = Charset.forName("UTF-8").newEncoder();
+        result.setPlaintext(charsetEncoder.encode(CharBuffer.wrap("password")));
+        when(mockKmsClient.decrypt(any(DecryptRequest.class))).thenReturn(result);
+
+        Secret secret = null;
+        try {
+            secret = test.getPassword();
+            TestCase.fail("should have thrown exception");
+        } catch (AwsBucketReadingException e) {
+            assertThat(e.getCause()).isInstanceOf(IOException.class);
+        }
+
+        // have we used the bucket
+        ArgumentCaptor<GetObjectRequest> capturedObjectRequest = ArgumentCaptor.forClass(GetObjectRequest.class);
+        verify(mockClient).getObject(capturedObjectRequest.capture());
+        assertThat(capturedObjectRequest.getValue().getBucketName()).isEqualTo("bucketUri");
+        assertThat(capturedObjectRequest.getValue().getS3ObjectId().getKey()).isEqualTo("/bucketPath");
+
+        // and we have closed it even if there was an exception
+        verify(mockS3Object).close();
     }
 
     @Test

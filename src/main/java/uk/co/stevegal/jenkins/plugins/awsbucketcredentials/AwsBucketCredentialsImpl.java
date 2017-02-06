@@ -1,5 +1,6 @@
 package uk.co.stevegal.jenkins.plugins.awsbucketcredentials;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.policy.resources.S3BucketResource;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.kms.AWSKMSClient;
@@ -46,7 +47,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private static final Logger LOGGER = Logger.getLogger(AwsBucketCredentialsImpl.class.getName());
 
     @DataBoundConstructor
-    public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope,@CheckForNull String id,
+    public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id,
                                     @CheckForNull String bucketName, @CheckForNull String bucketPath,
                                     @CheckForNull String username, @CheckForNull String description,
                                     @CheckForNull String kmsEncryptionContextKey, @CheckForNull String kmsSecretName) {
@@ -56,13 +57,13 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         this.kmsEncryptionContextKey = kmsEncryptionContextKey;
         this.kmsSecretName = kmsSecretName;
         this.username = username;
-        this.amazonS3Client= new AmazonS3Client(new ProfileCredentialsProvider());
-        this.amazonKmsClient= new AWSKMSClient();
+        this.amazonS3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
+        this.amazonKmsClient = new AWSKMSClient();
     }
 
     @Override
     public String getDisplayName() {
-        return this.bucketName+":"+this.bucketPath;
+        return this.bucketName + ":" + this.bucketPath;
     }
 
     @NonNull
@@ -76,18 +77,25 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private String readS3BucketContents() {
         LOGGER.fine("reading s3 bucket");
         S3Object s3Object = this.amazonS3Client.getObject(new GetObjectRequest(this.bucketName, this.bucketPath));
-        LOGGER.fine("getting s3 bucket contents");
-        S3ObjectInputStream objectContent = s3Object.getObjectContent();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(objectContent));
         StringBuilder builder = new StringBuilder();
-        String line;
         try {
-            while((line = reader.readLine()) != null) {
+            LOGGER.fine("getting s3 bucket contents");
+            S3ObjectInputStream objectContent = s3Object.getObjectContent();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(objectContent));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
                 builder.append(line);
             }
         } catch (IOException e) {
-            LOGGER.severe("IO Exception reading content");
-            throw new NotImplementedException();
+            LOGGER.severe("IOException "+e.getMessage());
+            throw new AwsBucketReadingException(e);
+        } finally {
+            try {
+                s3Object.close();
+            } catch (IOException e) {
+                LOGGER.severe("IO Exception closing bucket");
+            }
         }
         LOGGER.fine("read contents");
         return builder.toString();
@@ -96,7 +104,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private String decryptString(String encryptedString) {
         DecryptRequest request = new DecryptRequest();
         LOGGER.fine("decrypting with kms");
-        if (null!=this.kmsEncryptionContextKey && null!=this.kmsSecretName) {
+        if (null != this.kmsEncryptionContextKey && null != this.kmsSecretName) {
             LOGGER.info("decrypting with context");
             request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
         }
