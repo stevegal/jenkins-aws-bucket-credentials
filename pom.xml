@@ -28,8 +28,6 @@
     </licenses>
 
     <name>Stevegal's Amazon Web Bucket Credentials Plugin</name>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/CloudBees+AWS+Credentials+Plugin</url>
-
 
     <dependencies>
         <!-- plugin dependencies -->
