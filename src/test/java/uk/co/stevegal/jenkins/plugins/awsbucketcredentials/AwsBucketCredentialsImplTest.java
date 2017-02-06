@@ -153,6 +153,19 @@ public class AwsBucketCredentialsImplTest {
 
     }
 
+    @Test
+    public void canRetrieveDataViaGetters() {
+        String bucketName = this.test.getBucketName();
+        String bucketPath = this.test.getBucketPath();
+        final String kmsEncryptionContextKey = this.test.getKmsEncryptionContextKey();
+        final String kmsSecretName = this.test.getKmsSecretName();
+
+        assertThat(bucketName).isEqualTo("bucketUri");
+        assertThat(bucketPath).isEqualTo("/bucketPath");
+        assertThat(kmsEncryptionContextKey).isEqualTo("someEncryptContextKey");
+        assertThat(kmsSecretName).isEqualTo("kmsEncryptContextValue");
+    }
+
     private static class WriteBufferAnswer implements Answer<Integer> {
 
         private byte[] bytes;

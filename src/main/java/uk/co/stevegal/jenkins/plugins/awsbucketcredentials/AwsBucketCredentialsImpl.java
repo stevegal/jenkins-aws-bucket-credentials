@@ -112,6 +112,22 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         return this.username;
     }
 
+    public String getBucketName(){
+        return this.bucketName;
+    }
+
+    public String getBucketPath(){
+        return this.bucketPath;
+    }
+
+    public String getKmsEncryptionContextKey(){
+        return this.kmsEncryptionContextKey;
+    }
+
+    public String getKmsSecretName(){
+        return this.kmsSecretName;
+    }
+
     @Extension
     public static class DescriptorImpl extends CredentialsDescriptor {
 
