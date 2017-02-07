@@ -72,10 +72,6 @@ public class AwsBucketCredentialsBinding extends MultiBinding<AwsBucketCredentia
     @Extension
     public static class DescriptorImpl extends BindingDescriptor<AwsBucketCredentials> {
 
-        public DescriptorImpl() {
-            System.out.print("hello binding");
-        }
-
         @Override
         protected Class<AwsBucketCredentials> type() {
             return AwsBucketCredentials.class;

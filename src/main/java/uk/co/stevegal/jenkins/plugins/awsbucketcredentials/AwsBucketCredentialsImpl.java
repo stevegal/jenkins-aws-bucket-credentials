@@ -1,15 +1,7 @@
 package uk.co.stevegal.jenkins.plugins.awsbucketcredentials;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.policy.resources.S3BucketResource;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.kms.AWSKMSClient;
 import com.amazonaws.services.kms.model.DecryptRequest;
 import com.amazonaws.services.kms.model.DecryptResult;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
@@ -17,21 +9,16 @@ import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
-import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.Secret;
-import org.apache.commons.lang.NotImplementedException;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -39,6 +26,7 @@ import java.util.logging.Logger;
  * Created by stevegal on 05/02/2017.
  */
 public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements AwsBucketCredentials, StandardUsernamePasswordCredentials {
+    private static final long serialVersionUID = 1L;
 
     private final String bucketName;
     private final String bucketPath;
@@ -46,8 +34,8 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private final String kmsSecretName;
     private final Charset charset = Charset.forName("UTF-8");
     private String username;
-    private AmazonS3Client amazonS3Client;
-    private AWSKMSClient amazonKmsClient;
+    private AwsS3ClientBuilder amazonS3ClientBuilder;
+    private AwsKmsClientBuilder amazonKmsClientBuilder;
     private String region;
 
 
@@ -56,8 +44,9 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     @DataBoundConstructor
     public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id, @CheckForNull String region,
                                     @CheckForNull String bucketName, @CheckForNull String bucketPath,
-                                    @CheckForNull String username, @CheckForNull String description,
-                                    @CheckForNull String kmsEncryptionContextKey, @CheckForNull String kmsSecretName) {
+                                    @CheckForNull String username, @CheckForNull boolean s3Proxy, @CheckForNull String description,
+                                    @CheckForNull String kmsEncryptionContextKey, @CheckForNull String kmsSecretName, @CheckForNull boolean kmsProxy,
+                                    String proxyHost, String proxyPort) {
         super(scope, id, description);
         this.bucketName = bucketName;
         this.bucketPath = bucketPath;
@@ -65,11 +54,16 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         this.kmsSecretName = kmsSecretName;
         this.username = username;
         this.region=region;
-        this.amazonS3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
-        final Region definedRegion = Region.getRegion(Regions.valueOf(region));
-        this.amazonS3Client.setRegion(definedRegion);
-        this.amazonKmsClient = new AWSKMSClient();
-        this.amazonKmsClient.setRegion(definedRegion);
+        this.amazonS3ClientBuilder = new AwsS3ClientBuilder();
+        this.amazonS3ClientBuilder.region(region);
+        if (s3Proxy) {
+            this.amazonS3ClientBuilder.proxyHost(proxyHost).proxyPort(Integer.parseInt(proxyPort));
+        }
+        this.amazonKmsClientBuilder = new AwsKmsClientBuilder();
+        this.amazonKmsClientBuilder.region(region);
+        if (kmsProxy) {
+            this.amazonKmsClientBuilder.proxyHost(proxyHost).proxyPort(Integer.parseInt(proxyPort));
+        }
     }
 
     @Override
@@ -88,7 +82,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private byte[] readS3BucketContents() {
         LOGGER.fine("reading s3 bucket");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        S3Object s3Object = this.amazonS3Client.getObject(new GetObjectRequest(this.bucketName, this.bucketPath));
+        S3Object s3Object = this.amazonS3ClientBuilder.build().getObject(new GetObjectRequest(this.bucketName, this.bucketPath));
         try {
             LOGGER.fine("getting s3 bucket contents");
             S3ObjectInputStream objectContent = s3Object.getObjectContent();
@@ -120,7 +114,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
             request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
         }
         request.setCiphertextBlob(ByteBuffer.wrap(encryptedString));
-        DecryptResult decryptResult = this.amazonKmsClient.decrypt(request);
+        DecryptResult decryptResult = this.amazonKmsClientBuilder.build().decrypt(request);
         LOGGER.fine("decrypted with kms");
         return charset.decode(decryptResult.getPlaintext()).toString();
     }
