@@ -26,8 +26,10 @@ import org.apache.commons.lang.NotImplementedException;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,6 +48,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private String username;
     private AmazonS3Client amazonS3Client;
     private AWSKMSClient amazonKmsClient;
+    private String region;
 
 
     private static final Logger LOGGER = Logger.getLogger(AwsBucketCredentialsImpl.class.getName());
@@ -61,6 +64,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         this.kmsEncryptionContextKey = kmsEncryptionContextKey;
         this.kmsSecretName = kmsSecretName;
         this.username = username;
+        this.region=region;
         this.amazonS3Client = new AmazonS3Client(new DefaultAWSCredentialsProviderChain());
         final Region definedRegion = Region.getRegion(Regions.valueOf(region));
         this.amazonS3Client.setRegion(definedRegion);
@@ -76,24 +80,24 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     @NonNull
     @Override
     public Secret getPassword() {
-        String encryptedString = this.readS3BucketContents();
+        byte[] encryptedString = this.readS3BucketContents();
         String rawString = this.decryptString(encryptedString);
         return Secret.fromString(rawString);
     }
 
-    private String readS3BucketContents() {
+    private byte[] readS3BucketContents() {
         LOGGER.fine("reading s3 bucket");
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         S3Object s3Object = this.amazonS3Client.getObject(new GetObjectRequest(this.bucketName, this.bucketPath));
-        StringBuilder builder = new StringBuilder();
         try {
             LOGGER.fine("getting s3 bucket contents");
             S3ObjectInputStream objectContent = s3Object.getObjectContent();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(objectContent));
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
+            byte[] buffer = new byte[1024]; // 1k buffer
+            int read=0;
+            while ((read= objectContent.read(buffer,0,buffer.length))!=-1) {
+                baos.write(buffer,0,read);
             }
+            baos.flush();
         } catch (IOException e) {
             LOGGER.severe("IOException "+e.getMessage());
             throw new AwsBucketReadingException(e);
@@ -105,17 +109,17 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
             }
         }
         LOGGER.fine("read contents");
-        return builder.toString();
+        return baos.toByteArray();
     }
 
-    private String decryptString(String encryptedString) {
+    private String decryptString(byte[] encryptedString) {
         DecryptRequest request = new DecryptRequest();
         LOGGER.fine("decrypting with kms");
         if (null != this.kmsEncryptionContextKey && null != this.kmsSecretName) {
             LOGGER.info("decrypting with context");
             request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
         }
-        request.setCiphertextBlob(charset.encode(encryptedString));
+        request.setCiphertextBlob(ByteBuffer.wrap(encryptedString));
         DecryptResult decryptResult = this.amazonKmsClient.decrypt(request);
         LOGGER.fine("decrypted with kms");
         return charset.decode(decryptResult.getPlaintext()).toString();
@@ -141,6 +145,10 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
 
     public String getKmsSecretName(){
         return this.kmsSecretName;
+    }
+
+    public String getRegion() {
+        return region;
     }
 
     @Extension
