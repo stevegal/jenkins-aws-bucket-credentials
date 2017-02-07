@@ -43,8 +43,8 @@ import static org.mockito.Mockito.when;
 public class AwsBucketCredentialsImplTest {
 
     private AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-            "EU_WEST_1","bucketUri", "/bucketPath", "username", true,
-            "mydescription","someEncryptContextKey", "kmsEncryptContextValue", true, "host", "9000");
+            "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
+            "mydescription", "someEncryptContextKey", "kmsEncryptContextValue", true, "host", "9000");
 
     private AwsS3ClientBuilder mockClientBuilder;
     private AwsKmsClientBuilder mockKmsClientBuilder;
@@ -57,7 +57,7 @@ public class AwsBucketCredentialsImplTest {
         this.mockClientBuilder = mock(AwsS3ClientBuilder.class);
         this.mockKmsClientBuilder = mock(AwsKmsClientBuilder.class);
         Whitebox.setInternalState(test, "amazonS3ClientBuilder", mockClientBuilder);
-        Whitebox.setInternalState(test,"amazonKmsClientBuilder", mockKmsClientBuilder);
+        Whitebox.setInternalState(test, "amazonKmsClientBuilder", mockKmsClientBuilder);
 
     }
 
@@ -114,7 +114,7 @@ public class AwsBucketCredentialsImplTest {
         // have we used kms to decrypt
         ArgumentCaptor<DecryptRequest> capturedDecryptRequest = ArgumentCaptor.forClass(DecryptRequest.class);
         verify(mockKmsClient).decrypt(capturedDecryptRequest.capture());
-        assertThat(capturedDecryptRequest.getValue().getEncryptionContext()).containsEntry("someEncryptContextKey","kmsEncryptContextValue");
+        assertThat(capturedDecryptRequest.getValue().getEncryptionContext()).containsEntry("someEncryptContextKey", "kmsEncryptContextValue");
         ByteBuffer ciphertextBlob = capturedDecryptRequest.getValue().getCiphertextBlob();
         assertThat(new String(Charset.forName("UTF-8").decode(ciphertextBlob).array())).isEqualTo("encryptedPassword");
 
@@ -123,23 +123,23 @@ public class AwsBucketCredentialsImplTest {
     @Test
     public void regionSetInKmsAndS3Clients() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-            "eu-west-1","bucketUri", "/bucketPath", "username",true,
-            "mydescription",null, null,true,"host","8080");
-        AwsS3ClientBuilder clientBuilder = (AwsS3ClientBuilder)Whitebox.getInternalState(test, "amazonS3ClientBuilder");
+                "eu-west-1", "bucketUri", "/bucketPath", "username", true,
+                "mydescription", null, null, true, "host", "8080");
+        AwsS3ClientBuilder clientBuilder = (AwsS3ClientBuilder) Whitebox.getInternalState(test, "amazonS3ClientBuilder");
         AmazonS3Client amazonS3Client = clientBuilder.build();
         assertThat(amazonS3Client.getRegion().toString()).isEqualTo(Region.getRegion(Regions.EU_WEST_1).toString());
         {
-            ClientConfiguration configuration = (ClientConfiguration)Whitebox.getInternalState(amazonS3Client,"clientConfiguration");
+            ClientConfiguration configuration = (ClientConfiguration) Whitebox.getInternalState(amazonS3Client, "clientConfiguration");
             assertThat(configuration.getProxyHost()).isEqualTo("host");
             assertThat(configuration.getProxyPort()).isEqualTo(8080);
         }
-        AwsKmsClientBuilder awskmsClient = (AwsKmsClientBuilder)Whitebox.getInternalState(test,"amazonKmsClientBuilder");
-        String region = (String)Whitebox.getInternalState(awskmsClient,"region");
+        AwsKmsClientBuilder awskmsClient = (AwsKmsClientBuilder) Whitebox.getInternalState(test, "amazonKmsClientBuilder");
+        String region = (String) Whitebox.getInternalState(awskmsClient, "region");
         assertThat(region).contains("eu-west-1");
         {
-            String configuration = (String)Whitebox.getInternalState(awskmsClient,"host");
+            String configuration = (String) Whitebox.getInternalState(awskmsClient, "host");
             assertThat(configuration).isEqualTo("host");
-            int port =(Integer) Whitebox.getInternalState(awskmsClient,"port");
+            int port = (Integer) Whitebox.getInternalState(awskmsClient, "port");
             assertThat(port).isEqualTo(8080);
         }
     }
@@ -147,20 +147,20 @@ public class AwsBucketCredentialsImplTest {
     @Test
     public void turnOffProxyIgnoresSettings() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-                "eu-west-1","bucketUri", "/bucketPath", "username",false,
-                "mydescription",null, null,false,"host","8080");
-        AwsS3ClientBuilder clientBuilder = (AwsS3ClientBuilder)Whitebox.getInternalState(test, "amazonS3ClientBuilder");
+                "eu-west-1", "bucketUri", "/bucketPath", "username", false,
+                "mydescription", null, null, false, "host", "8080");
+        AwsS3ClientBuilder clientBuilder = (AwsS3ClientBuilder) Whitebox.getInternalState(test, "amazonS3ClientBuilder");
         AmazonS3Client amazonS3Client = clientBuilder.build();
         assertThat(amazonS3Client.getRegion().toString()).isEqualTo(Region.getRegion(Regions.EU_WEST_1).toString());
         {
-            ClientConfiguration configuration = (ClientConfiguration)Whitebox.getInternalState(amazonS3Client,"clientConfiguration");
+            ClientConfiguration configuration = (ClientConfiguration) Whitebox.getInternalState(amazonS3Client, "clientConfiguration");
             assertThat(configuration.getProxyHost()).isNull();
         }
-        AwsKmsClientBuilder awskmsClient = (AwsKmsClientBuilder)Whitebox.getInternalState(test,"amazonKmsClientBuilder");
-        String region = (String)Whitebox.getInternalState(awskmsClient,"region");
+        AwsKmsClientBuilder awskmsClient = (AwsKmsClientBuilder) Whitebox.getInternalState(test, "amazonKmsClientBuilder");
+        String region = (String) Whitebox.getInternalState(awskmsClient, "region");
         assertThat(region).contains("eu-west-1");
         {
-            String configuration = (String)Whitebox.getInternalState(awskmsClient,"host");
+            String configuration = (String) Whitebox.getInternalState(awskmsClient, "host");
             assertThat(configuration).isNull();
         }
     }
@@ -168,10 +168,10 @@ public class AwsBucketCredentialsImplTest {
     @Test
     public void doesNotUseEncryptContextIfNotProvided() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
-                "EU_WEST_1","bucketUri", "/bucketPath", "username", true,
-                "mydescription",null, "kmsEncryptContextValue", true, "host", "9000");
+                "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
+                "mydescription", null, "kmsEncryptContextValue", true, "host", "9000");
         Whitebox.setInternalState(test, "amazonS3ClientBuilder", mockClientBuilder);
-        Whitebox.setInternalState(test,"amazonKmsClientBuilder", mockKmsClientBuilder);
+        Whitebox.setInternalState(test, "amazonKmsClientBuilder", mockKmsClientBuilder);
 
         AmazonS3Client mockClient = mock(AmazonS3Client.class);
         when(mockClientBuilder.build()).thenReturn(mockClient);
@@ -259,11 +259,20 @@ public class AwsBucketCredentialsImplTest {
         String bucketPath = this.test.getBucketPath();
         final String kmsEncryptionContextKey = this.test.getKmsEncryptionContextKey();
         final String kmsSecretName = this.test.getKmsSecretName();
+        final boolean isKms = this.test.isKmsProxy();
+        final boolean isS3 = this.test.isS3Proxy();
+        final String host = this.test.getProxyHost();
+        final String port = this.test.getProxyPort();
 
         assertThat(bucketName).isEqualTo("bucketUri");
         assertThat(bucketPath).isEqualTo("/bucketPath");
         assertThat(kmsEncryptionContextKey).isEqualTo("someEncryptContextKey");
         assertThat(kmsSecretName).isEqualTo("kmsEncryptContextValue");
+        assertThat(isKms).isTrue();
+        assertThat(isS3).isTrue();
+        assertThat(host).isEqualTo("host");
+        assertThat(port).isEqualTo("9000");
+
     }
 
     private static class WriteBufferAnswer implements Answer<Integer> {

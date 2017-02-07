@@ -30,6 +30,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
 
     private final String bucketName;
     private final String bucketPath;
+    private boolean s3Proxy;
     private String kmsEncryptionContextKey;
     private final String kmsSecretName;
     private final Charset charset = Charset.forName("UTF-8");
@@ -37,6 +38,9 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private AwsS3ClientBuilder amazonS3ClientBuilder;
     private AwsKmsClientBuilder amazonKmsClientBuilder;
     private String region;
+    private boolean kmsProxy;
+    private String proxyHost;
+    private String proxyPort;
 
 
     private static final Logger LOGGER = Logger.getLogger(AwsBucketCredentialsImpl.class.getName());
@@ -50,10 +54,14 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         super(scope, id, description);
         this.bucketName = bucketName;
         this.bucketPath = bucketPath;
+        this.s3Proxy = s3Proxy;
         this.kmsEncryptionContextKey = kmsEncryptionContextKey;
         this.kmsSecretName = kmsSecretName;
         this.username = username;
         this.region=region;
+        this.kmsProxy = kmsProxy;
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
         this.amazonS3ClientBuilder = new AwsS3ClientBuilder();
         this.amazonS3ClientBuilder.region(region);
         if (s3Proxy) {
@@ -64,6 +72,22 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         if (kmsProxy) {
             this.amazonKmsClientBuilder.proxyHost(proxyHost).proxyPort(Integer.parseInt(proxyPort));
         }
+    }
+
+    public boolean isKmsProxy() {
+        return kmsProxy;
+    }
+
+    public boolean isS3Proxy() {
+        return s3Proxy;
+    }
+
+    public String getProxyHost() {
+        return proxyHost;
+    }
+
+    public String getProxyPort() {
+        return proxyPort;
     }
 
     @Override
