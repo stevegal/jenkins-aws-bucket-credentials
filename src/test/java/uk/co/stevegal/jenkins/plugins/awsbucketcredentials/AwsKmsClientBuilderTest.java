@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
 /**
- * Created by stephengalbraith on 07/02/2017.
+ * Created by stevegal on 07/02/2017.
  */
 public class AwsKmsClientBuilderTest {
     @Test

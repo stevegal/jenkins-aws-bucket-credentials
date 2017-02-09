@@ -10,7 +10,7 @@ import hudson.Util;
 import java.io.Serializable;
 
 /**
- * Created by stephengalbraith on 07/02/2017.
+ * Created by stevegal on 07/02/2017.
  */
 public class AwsS3ClientBuilder implements Serializable{
     private static final long serialVersionUID = 1L;
