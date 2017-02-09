@@ -5,7 +5,6 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kms.AWSKMSClient;
-import com.amazonaws.services.s3.AmazonS3Client;
 import hudson.Util;
 
 import java.io.Serializable;
