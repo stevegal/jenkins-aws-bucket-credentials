@@ -11,8 +11,8 @@
     </parent>
 
     <groupId>uk.co.stevegal</groupId>
-    <artifactId>aws-bucket</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <artifactId>aws-bucket-credentials</artifactId>
+    <version>0.1</version>
     <packaging>hpi</packaging>
 
     <properties>
