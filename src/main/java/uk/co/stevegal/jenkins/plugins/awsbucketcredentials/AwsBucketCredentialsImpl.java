@@ -33,7 +33,8 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private boolean s3Proxy;
     private String kmsEncryptionContextKey;
     private final String kmsSecretName;
-    private final Charset charset = Charset.forName("UTF-8");
+
+    private final transient Charset charset = Charset.forName("UTF-8");
     private String username;
     private AwsS3ClientBuilder amazonS3ClientBuilder;
     private AwsKmsClientBuilder amazonKmsClientBuilder;
