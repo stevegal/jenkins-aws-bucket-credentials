@@ -12,7 +12,7 @@
 
     <groupId>uk.co.stevegal</groupId>
     <artifactId>aws-bucket-credentials</artifactId>
-    <version>0.1</version>
+    <version>0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
