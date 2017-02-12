@@ -16,9 +16,9 @@
     <packaging>hpi</packaging>
 
     <scm>
-      <connection>scm:git:ssh://github.com/jenkinsci/aws-bucket-credentials.git</connection>
-      <developerConnection>scm:git:ssh://git@github.com/jenkinsci/aws-bucket-credentials.git</developerConnection>
-      <url>https://github.com/jenkinsci/aws-bucket-credentials</url>
+      <connection>scm:git:ssh://github.com/jenkinsci/aws-bucket-credentials-plugin.git</connection>
+      <developerConnection>scm:git:ssh://git@github.com/jenkinsci/aws-bucket-credentials-plugin.git</developerConnection>
+      <url>https://github.com/jenkinsci/aws-bucket-credentials-plugin</url>
     </scm>
 
     <properties>
