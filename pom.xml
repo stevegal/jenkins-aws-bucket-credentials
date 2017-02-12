@@ -15,6 +15,12 @@
     <version>0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
+    <scm>
+      <connection>scm:git:ssh://github.com/jenkinsci/aws-bucket-credentials.git</connection>
+      <developerConnection>scm:git:ssh://git@github.com/jenkinsci/aws-bucket-credentials.git</developerConnection>
+      <url>https://github.com/jenkinsci/aws-bucket-credentials</url>
+    </scm>
+
     <properties>
         <jenkins.version>1.596.1</jenkins.version>
         <java.level>6</java.level>
