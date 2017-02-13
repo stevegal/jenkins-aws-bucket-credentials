@@ -10,7 +10,7 @@
 
     <groupId>uk.co.stevegal</groupId>
     <artifactId>aws-bucket-credentials</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <scm>
@@ -32,7 +32,7 @@
         </license>
     </licenses>
 
-    <name>Stevegal's Amazon Web Bucket Credentials Plugin</name>
+    <name>Amazon S3 Bucket Credentials Plugin</name>
     <url>https://wiki.jenkins-ci.org/display/JENKINS/AWS+Bucket+Credentials+Plugin</url>
     <developers>
       <developer>
