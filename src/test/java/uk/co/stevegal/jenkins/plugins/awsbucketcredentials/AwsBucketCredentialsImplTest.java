@@ -22,7 +22,7 @@ import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -273,6 +273,79 @@ public class AwsBucketCredentialsImplTest {
         assertThat(host).isEqualTo("host");
         assertThat(port).isEqualTo("9000");
 
+    }
+
+    @Test
+    public void afterDeserialiseCanStillDecrypt() throws Exception {
+        byte[] objectBytes = this.serialise(this.test);
+        AwsBucketCredentialsImpl newObj = this.deserialise(objectBytes,AwsBucketCredentialsImpl.class);
+
+        S3Object mockS3Object = mock(S3Object.class);
+        AmazonS3Client mockClient = mock(AmazonS3Client.class);
+        AwsS3ClientBuilder mockClientBuilder = (AwsS3ClientBuilder)Whitebox.getInternalState(newObj,"amazonS3ClientBuilder");
+        when(mockClientBuilder.build()).thenReturn(mockClient);
+        when(mockClient.getObject(any(GetObjectRequest.class))).thenReturn(mockS3Object);
+        AWSKMSClient mockKmsClient = mock(AWSKMSClient.class);
+        AwsKmsClientBuilder mockKmsClientBuilder =  (AwsKmsClientBuilder)Whitebox.getInternalState(newObj,"amazonKmsClientBuilder");
+        when(mockKmsClientBuilder.build()).thenReturn(mockKmsClient);
+
+        S3ObjectInputStream mockS3ObjectInputStream = mock(S3ObjectInputStream.class);
+        when(mockS3Object.getObjectContent()).thenReturn(mockS3ObjectInputStream);
+        when(mockS3ObjectInputStream.read(new byte[anyInt()], anyInt(), anyByte()))
+                .thenAnswer(new WriteBufferAnswer("encryptedPassword".getBytes()))
+                .thenReturn(-1);
+
+        DecryptResult result = new DecryptResult();
+        CharsetEncoder charsetEncoder = Charset.forName("UTF-8").newEncoder();
+        result.setPlaintext(charsetEncoder.encode(CharBuffer.wrap("password")));
+        when(mockKmsClient.decrypt(any(DecryptRequest.class))).thenReturn(result);
+
+        Secret secret = newObj.getPassword();
+
+        // if we get here we have passed.
+        assertThat(secret.getPlainText()).isEqualTo("password");
+
+    }
+
+    private byte[] serialise(Serializable object) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        try {
+            oos.writeObject(object);
+            return baos.toByteArray();
+        } finally {
+            try {
+                oos.close();
+            } catch (IOException exception) {
+                // no impl
+            }
+            try {
+                baos.close();
+            } catch (IOException exception) {
+                // no impl
+            }
+        }
+
+    }
+
+    private <T> T deserialise(byte[] objectBytes, Class<T> clazz) throws Exception {
+        ByteArrayInputStream bais = new ByteArrayInputStream(objectBytes);
+        ObjectInputStream ois = new ObjectInputStream(bais);
+        try {
+            return (T)ois.readObject();
+        } finally {
+            try {
+                ois.close();
+            } catch (IOException exception ) {
+                // no impl
+            }
+
+            try {
+                bais.close();
+            } catch (IOException exception) {
+                // no impl
+            }
+        }
     }
 
     private static class WriteBufferAnswer implements Answer<Integer> {

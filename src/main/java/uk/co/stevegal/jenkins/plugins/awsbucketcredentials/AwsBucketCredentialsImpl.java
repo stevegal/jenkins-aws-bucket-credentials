@@ -34,7 +34,6 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private String kmsEncryptionContextKey;
     private final String kmsSecretName;
 
-    private final transient Charset charset = Charset.forName("UTF-8");
     private String username;
     private AwsS3ClientBuilder amazonS3ClientBuilder;
     private AwsKmsClientBuilder amazonKmsClientBuilder;
@@ -141,7 +140,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         request.setCiphertextBlob(ByteBuffer.wrap(encryptedString));
         DecryptResult decryptResult = this.amazonKmsClientBuilder.build().decrypt(request);
         LOGGER.fine("decrypted with kms");
-        return charset.decode(decryptResult.getPlaintext()).toString();
+        return Charset.forName("UTF-8").decode(decryptResult.getPlaintext()).toString();
     }
 
     @NonNull
