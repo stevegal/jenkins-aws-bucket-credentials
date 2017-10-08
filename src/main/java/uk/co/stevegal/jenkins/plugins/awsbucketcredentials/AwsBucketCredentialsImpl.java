@@ -49,7 +49,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id, @CheckForNull String region,
                                     @CheckForNull String bucketName, @CheckForNull String bucketPath,
                                     @CheckForNull String username, @CheckForNull boolean s3Proxy, @CheckForNull String description,
-                                    @CheckForNull String kmsEncryptionContextKey, @CheckForNull String kmsSecretName, @CheckForNull boolean kmsProxy,
+                                    String kmsEncryptionContextKey,  String kmsSecretName, boolean kmsProxy,
                                     String proxyHost, String proxyPort) {
         super(scope, id, description);
         this.bucketName = bucketName;
@@ -131,16 +131,23 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     }
 
     private String decryptString(byte[] encryptedString) {
-        DecryptRequest request = new DecryptRequest();
-        LOGGER.fine("decrypting with kms");
-        if (null != this.kmsEncryptionContextKey && null != this.kmsSecretName) {
-            LOGGER.info("decrypting with context");
-            request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
+        ByteBuffer decryptByteBuffer=null;
+        if (null != this.kmsSecretName){
+            DecryptRequest request = new DecryptRequest();
+            LOGGER.fine("decrypting with kms");
+            if (null != this.kmsEncryptionContextKey) {
+                LOGGER.info("decrypting with context");
+                request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
+            }
+            request.setCiphertextBlob(ByteBuffer.wrap(encryptedString));
+            DecryptResult decryptResult = this.amazonKmsClientBuilder.build().decrypt(request);
+            decryptByteBuffer = decryptResult.getPlaintext();
+            LOGGER.fine("decrypted with kms");
+        } else {
+            LOGGER.fine("no kms secret specified. Assume SSE");
+            decryptByteBuffer =ByteBuffer.wrap(encryptedString);
         }
-        request.setCiphertextBlob(ByteBuffer.wrap(encryptedString));
-        DecryptResult decryptResult = this.amazonKmsClientBuilder.build().decrypt(request);
-        LOGGER.fine("decrypted with kms");
-        return Charset.forName("UTF-8").decode(decryptResult.getPlaintext()).toString();
+        return Charset.forName("UTF-8").decode(decryptByteBuffer).toString();
     }
 
     @NonNull

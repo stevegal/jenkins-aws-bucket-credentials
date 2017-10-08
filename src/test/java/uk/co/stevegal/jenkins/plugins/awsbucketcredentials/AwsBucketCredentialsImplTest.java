@@ -32,9 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyByte;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 /**
@@ -305,6 +303,43 @@ public class AwsBucketCredentialsImplTest {
         // if we get here we have passed.
         assertThat(secret.getPlainText()).isEqualTo("password");
 
+    }
+
+    @Test
+    public void whenNoKmsSpecifiedJustUsesGetFromBucket() throws Exception {
+        AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
+                "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
+                "mydescription", null, null, true, "host", "9000");
+        Whitebox.setInternalState(test, "amazonS3ClientBuilder", mockClientBuilder);
+        Whitebox.setInternalState(test, "amazonKmsClientBuilder", mockKmsClientBuilder);
+
+        AmazonS3Client mockClient = mock(AmazonS3Client.class);
+        when(mockClientBuilder.build()).thenReturn(mockClient);
+
+
+        S3Object mockS3Object = mock(S3Object.class);
+        when(mockClient.getObject(any(GetObjectRequest.class))).thenReturn(mockS3Object);
+        S3ObjectInputStream mockS3ObjectInputStream = mock(S3ObjectInputStream.class);
+        when(mockS3Object.getObjectContent()).thenReturn(mockS3ObjectInputStream);
+        when(mockS3ObjectInputStream.read(new byte[anyInt()], anyInt(), anyByte()))
+                .thenAnswer(new WriteBufferAnswer("encryptedPassword".getBytes()))
+                .thenReturn(-1);
+
+        Secret secret = test.getPassword();
+
+        // have we got the expected password
+        assertThat(secret.getPlainText()).isEqualTo("encryptedPassword");
+
+        // have we used the bucket
+        ArgumentCaptor<GetObjectRequest> capturedObjectRequest = ArgumentCaptor.forClass(GetObjectRequest.class);
+        verify(mockClient).getObject(capturedObjectRequest.capture());
+        assertThat(capturedObjectRequest.getValue().getBucketName()).isEqualTo("bucketUri");
+        assertThat(capturedObjectRequest.getValue().getS3ObjectId().getKey()).isEqualTo("/bucketPath");
+
+        // have we not used kms to decrypt
+        verifyNoMoreInteractions(mockKmsClientBuilder);
+
+        verify(mockS3Object).close();
     }
 
     private byte[] serialise(Serializable object) throws Exception {
