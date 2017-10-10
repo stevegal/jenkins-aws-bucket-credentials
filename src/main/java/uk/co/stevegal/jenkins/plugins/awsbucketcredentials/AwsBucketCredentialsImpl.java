@@ -46,22 +46,51 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
 
     private static final Logger LOGGER = Logger.getLogger(AwsBucketCredentialsImpl.class.getName());
 
+    public static final class KmsDescription {
+        String kmsEncryptionContextKey;
+        String kmsSecretName;
+        boolean kmsProxy;
+
+        @DataBoundConstructor
+        public KmsDescription(boolean kmsProxy, String kmsSecretName, String kmsEncryptionContextKey) {
+            this.kmsProxy = kmsProxy;
+            this.kmsSecretName = kmsSecretName;
+            this.kmsEncryptionContextKey = kmsEncryptionContextKey;
+        }
+
+        public void setKmsEncryptionContextKey(String kmsEncryptionContextKey) {
+            this.kmsEncryptionContextKey = kmsEncryptionContextKey;
+        }
+
+        public void setKmsProxy(boolean kmsProxy) {
+            this.kmsProxy = kmsProxy;
+        }
+
+        public void setKmsSecretName(String kmsSecretName) {
+            this.kmsSecretName = kmsSecretName;
+        }
+
+        @Override
+        public String toString() {
+            return super.toString()+ "(kmsProxy:"+kmsProxy+", kmsSecretName:"+kmsSecretName
+                    +", kmsEncyptionContextKey:"+kmsEncryptionContextKey+")";
+        }
+    }
+
     @DataBoundConstructor
     public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id, @CheckForNull String region,
                                     @CheckForNull String bucketName, @CheckForNull String bucketPath,
                                     @CheckForNull String username, @CheckForNull boolean s3Proxy, @CheckForNull String description,
-                                    boolean avoidKms,
-                                    String kmsEncryptionContextKey,  String kmsSecretName, boolean kmsProxy,
+                                    KmsDescription avoidKms,
                                     String proxyHost, String proxyPort) {
         super(scope, id, description);
         this.bucketName = bucketName;
         this.bucketPath = bucketPath;
         this.s3Proxy = s3Proxy;
-        this.kmsEncryptionContextKey = kmsEncryptionContextKey;
-        this.kmsSecretName = kmsSecretName;
+
         this.username = username;
         this.region=region;
-        this.kmsProxy = kmsProxy;
+
         this.proxyHost = proxyHost;
         this.proxyPort = proxyPort;
         this.amazonS3ClientBuilder = new AwsS3ClientBuilder();
@@ -74,7 +103,17 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         if (kmsProxy) {
             this.amazonKmsClientBuilder.proxyHost(proxyHost).proxyPort(Integer.parseInt(proxyPort));
         }
-        this.avoidKms=avoidKms;
+        if (null==avoidKms) {
+            this.avoidKms = true;
+            this.kmsSecretName = null;
+            this.kmsProxy = false;
+            this.kmsEncryptionContextKey = null;
+        } else {
+            this.avoidKms = false;
+            this.kmsEncryptionContextKey = avoidKms.kmsEncryptionContextKey;
+            this.kmsSecretName = avoidKms.kmsSecretName;
+            this.kmsProxy = avoidKms.kmsProxy;
+        }
     }
 
     public boolean isKmsProxy() {
