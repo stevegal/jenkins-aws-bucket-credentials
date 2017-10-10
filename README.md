@@ -19,5 +19,5 @@
 KMS is used to decrypt the cipher text
 You can optionally provide a context key and value within the script if you used this to encrypt with.
 
-If you do not provide a kms secret, it does teh get from s3. Use this if you have server-side encryption
-enabled on the s3 bucket.
+If you check the avoid kms flag then you do not provide a kms secret. Instead it gets the secret directly from the s3 bucket.
+Use this only if you have server-side encryption enabled on the s3 bucket or your secret will be exposed.
