@@ -42,7 +42,7 @@ public class AwsBucketCredentialsImplTest {
 
     private AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
             "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
-            "mydescription", generateDescription("someEncryptContextKey", "kmsEncryptContextValue", true), "host", "9000");
+            "mydescription", generateDescription("kmsEncryptContextValue", "someEncryptContextKey", true), "host", "9000");
 
     private AwsS3ClientBuilder mockClientBuilder;
     private AwsKmsClientBuilder mockKmsClientBuilder;
@@ -212,10 +212,7 @@ public class AwsBucketCredentialsImplTest {
     }
 
     private AwsBucketCredentialsImpl.KmsDescription generateDescription(String key, String value,boolean useProxy) {
-        AwsBucketCredentialsImpl.KmsDescription description = new AwsBucketCredentialsImpl.KmsDescription();
-        description.kmsEncryptionContextKey=value;
-        description.kmsSecretName=key;
-        description.kmsProxy=useProxy;
+        AwsBucketCredentialsImpl.KmsDescription description = new AwsBucketCredentialsImpl.KmsDescription(useProxy,key,value);
         return description;
     }
 
@@ -278,6 +275,11 @@ public class AwsBucketCredentialsImplTest {
         assertThat(isS3).isTrue();
         assertThat(host).isEqualTo("host");
         assertThat(port).isEqualTo("9000");
+
+        AwsBucketCredentialsImpl.KmsDescription description = this.test.getKmsDescription();
+        assertThat(description.isKmsProxy()).isTrue();
+        assertThat(description.getKmsEncryptionContextKey()).isEqualTo("someEncryptContextKey");
+        assertThat(description.getKmsSecretName()).isEqualTo("kmsEncryptContextValue");
 
     }
 
