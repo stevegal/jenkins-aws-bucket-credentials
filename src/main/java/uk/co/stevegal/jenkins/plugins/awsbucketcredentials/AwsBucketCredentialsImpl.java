@@ -41,6 +41,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     private boolean kmsProxy;
     private String proxyHost;
     private String proxyPort;
+    private boolean avoidKms;
 
 
     private static final Logger LOGGER = Logger.getLogger(AwsBucketCredentialsImpl.class.getName());
@@ -49,6 +50,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
     public AwsBucketCredentialsImpl(@CheckForNull CredentialsScope scope, @CheckForNull String id, @CheckForNull String region,
                                     @CheckForNull String bucketName, @CheckForNull String bucketPath,
                                     @CheckForNull String username, @CheckForNull boolean s3Proxy, @CheckForNull String description,
+                                    boolean avoidKms,
                                     String kmsEncryptionContextKey,  String kmsSecretName, boolean kmsProxy,
                                     String proxyHost, String proxyPort) {
         super(scope, id, description);
@@ -72,6 +74,7 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         if (kmsProxy) {
             this.amazonKmsClientBuilder.proxyHost(proxyHost).proxyPort(Integer.parseInt(proxyPort));
         }
+        this.avoidKms=avoidKms;
     }
 
     public boolean isKmsProxy() {
@@ -132,10 +135,10 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
 
     private String decryptString(byte[] encryptedString) {
         ByteBuffer decryptByteBuffer=null;
-        if (null != this.kmsSecretName){
+        if (!avoidKms){
             DecryptRequest request = new DecryptRequest();
             LOGGER.fine("decrypting with kms");
-            if (null != this.kmsEncryptionContextKey) {
+            if (null != this.kmsSecretName && null != this.kmsEncryptionContextKey) {
                 LOGGER.info("decrypting with context");
                 request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
             }

@@ -42,7 +42,7 @@ public class AwsBucketCredentialsImplTest {
 
     private AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
             "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
-            "mydescription", "someEncryptContextKey", "kmsEncryptContextValue", true, "host", "9000");
+            "mydescription", false,"someEncryptContextKey", "kmsEncryptContextValue", true, "host", "9000");
 
     private AwsS3ClientBuilder mockClientBuilder;
     private AwsKmsClientBuilder mockKmsClientBuilder;
@@ -122,7 +122,7 @@ public class AwsBucketCredentialsImplTest {
     public void regionSetInKmsAndS3Clients() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
                 "eu-west-1", "bucketUri", "/bucketPath", "username", true,
-                "mydescription", null, null, true, "host", "8080");
+                "mydescription",false, null, null, true, "host", "8080");
         AwsS3ClientBuilder clientBuilder = (AwsS3ClientBuilder) Whitebox.getInternalState(test, "amazonS3ClientBuilder");
         AmazonS3Client amazonS3Client = clientBuilder.build();
         assertThat(amazonS3Client.getRegion().toString()).isEqualTo(Region.getRegion(Regions.EU_WEST_1).toString());
@@ -146,7 +146,7 @@ public class AwsBucketCredentialsImplTest {
     public void turnOffProxyIgnoresSettings() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
                 "eu-west-1", "bucketUri", "/bucketPath", "username", false,
-                "mydescription", null, null, false, "host", "8080");
+                "mydescription",false, null, null, false, "host", "8080");
         AwsS3ClientBuilder clientBuilder = (AwsS3ClientBuilder) Whitebox.getInternalState(test, "amazonS3ClientBuilder");
         AmazonS3Client amazonS3Client = clientBuilder.build();
         assertThat(amazonS3Client.getRegion().toString()).isEqualTo(Region.getRegion(Regions.EU_WEST_1).toString());
@@ -167,7 +167,7 @@ public class AwsBucketCredentialsImplTest {
     public void doesNotUseEncryptContextIfNotProvided() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
                 "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
-                "mydescription", null, "kmsEncryptContextValue", true, "host", "9000");
+                "mydescription", false, null, "kmsEncryptContextValue", true, "host", "9000");
         Whitebox.setInternalState(test, "amazonS3ClientBuilder", mockClientBuilder);
         Whitebox.setInternalState(test, "amazonKmsClientBuilder", mockKmsClientBuilder);
 
@@ -309,7 +309,7 @@ public class AwsBucketCredentialsImplTest {
     public void whenNoKmsSpecifiedJustUsesGetFromBucket() throws Exception {
         AwsBucketCredentialsImpl test = new AwsBucketCredentialsImpl(CredentialsScope.GLOBAL, "myId",
                 "EU_WEST_1", "bucketUri", "/bucketPath", "username", true,
-                "mydescription", null, null, true, "host", "9000");
+                "mydescription", true, null, null, true, "host", "9000");
         Whitebox.setInternalState(test, "amazonS3ClientBuilder", mockClientBuilder);
         Whitebox.setInternalState(test, "amazonKmsClientBuilder", mockKmsClientBuilder);
 
