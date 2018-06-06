@@ -1,7 +1,8 @@
-#This is a jenkins plugin to retrieve encrypted credentials from an Amazon S3 bucket that is encrypted with KMS
+# aws-bucket-credentials-plugin
 
+This is a jenkins plugin to retrieve encrypted credentials from an Amazon S3 bucket that is encrypted with KMS
 
-##The variables are:
+The variables are:
 
 | variable            | description                                                                                         | required |
 |---------------------|-----------------------------------------------------------------------------------------------------|----------|
@@ -19,5 +20,5 @@
 KMS is used to decrypt the cipher text
 You can optionally provide a context key and value within the script if you used this to encrypt with.
 
-If you check the avoid kms flag then you do not provide a kms secret. Instead it gets the secret directly from the s3 bucket.
-Use this only if you have server-side encryption enabled on the s3 bucket or your secret will be exposed.
+If you check the avoid KMS flag then you do not provide a KMS secret. Instead it gets the secret directly from the S3 bucket.
+Use this only if you have server-side encryption enabled on the S3 bucket or your secret will be exposed.
