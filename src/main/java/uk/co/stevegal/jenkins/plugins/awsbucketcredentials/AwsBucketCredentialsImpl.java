@@ -190,7 +190,8 @@ public class AwsBucketCredentialsImpl extends BaseStandardCredentials implements
         if (!avoidKms){
             DecryptRequest request = new DecryptRequest();
             LOGGER.fine("decrypting with kms");
-            if (null != this.kmsSecretName && null != this.kmsEncryptionContextKey) {
+            if (null != this.kmsSecretName && !this.kmsSecretName.isEmpty()
+                && null != this.kmsEncryptionContextKey && !this.kmsEncryptionContextKey.isEmpty()) {
                 LOGGER.info("decrypting with context");
                 request.addEncryptionContextEntry(this.kmsEncryptionContextKey, this.kmsSecretName);
             }
